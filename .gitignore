@@ -1,0 +1,12 @@
+# SSH keys
+*.pem
+capstoneEC2.pem
+
+# Python
+__pycache__/
+*.pyc
+*.so
+
+# OS files
+.DS_Store
+Thumbs.db

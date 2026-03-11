@@ -1,0 +1,63 @@
+#PV for AWS IAM workaround
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: wave-local-pv
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: manual #links both PV and PVC together
+  hostPath:
+    path: "/mnt/wave-data" # Uses the Node's actual hard drive
+---
+#the storage (PVC)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: wave-storage-claim
+spec:
+  accessModes:
+    - ReadWriteOnce #single node at a time
+  storageClassName: manual #links both PV and PVC together (for workaround)
+  resources:
+    requests:
+      storage: 1Gi
+---
+#the parallel compute (indexed job)
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: wave-calculator
+spec:
+  completions: 10
+  parallelism: 5
+  completionMode: Indexed
+  template:
+    metadata: #for metric pods
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9113"
+    spec:
+
+      initContainers:
+      - name: nginx-exporter
+        image: nginx/nginx-prometheus-exporter:latest
+        restartPolicy: Always #magic line to kill when main job finishes
+        ports:
+          - containerPort: 9113 #for prometheus
+      
+      containers:
+      - name: fortran-worker
+        image: <YOUR_AWS_ACCOUNT_ID>.dkr.ecr.us-west-2.amazonaws.com/wave-worker:latest
+        volumeMounts:
+        - name: shared-data
+          mountPath: /app/data #where python script will save output files
+      
+      volumes:
+      - name: shared-data
+        persistentVolumeClaim:
+          claimName: wave-storage-claim
+          
+      restartPolicy: Never #if fortran math crashes, dont do endless loop of rebooting it, just mark as failed
