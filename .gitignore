@@ -6,6 +6,7 @@ capstoneEC2.pem
 __pycache__/
 *.pyc
 *.so
+schrodinger.py
 
 # OS files
 .DS_Store
