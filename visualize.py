@@ -1,5 +1,5 @@
-# this file listens to Redis for chunks generated from workers.
-# when a full frame of 10 chunks are received, plot it and wait for next frame
+# This file listens to Redis for chunks generated from workers.
+# When a full frame of 10 chunks are received, it plots it and waits for next frame.
 
 import redis
 import json
